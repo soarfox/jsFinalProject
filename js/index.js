@@ -1,9 +1,6 @@
 //在本檔案中引用config.js檔案後, 即可測試看看是否有抓到API的路徑與token
-console.log(api_path, token);
-
 const productList = document.querySelector(".productWrap");
-console.log(productList);
-
+let productData = [];
 let str = `<li class="productCard">
         <h4 class="productType">新品</h4>
         <img src="https://github.com/soarfox/jsFinalProject/blob/main/images/JlGUkjl.png?raw=true" alt="Antony 雙人">
@@ -13,12 +10,23 @@ let str = `<li class="productCard">
         <p class="nowPrice">NT$12,000</p>
       </li>`;
 productList.innerHTML = str;
-console.log(str);
 
-/* axios.get(`https://livejs-api.hexschool.io/api/livejs/v1/customer/${api_path}/products`)
+function init(){
+  getProductList();
+}
+
+function getProductList(){
+  axios.get(`https://livejs-api.hexschool.io/api/livejs/v1/customer/${api_path}/products`)
 .then(function(response){
+  productData = response.data.products;
+  console.log(productData);
+})
+.catch(function(response){
   console.log(response);
-}) */
+})
+}
+
+init();
 
 
 
