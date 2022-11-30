@@ -1,21 +1,32 @@
 //在本檔案中引用config.js檔案後, 即可測試看看是否有抓到API的路徑與token
 const productList = document.querySelector(".productWrap");
+const productSelect = document.querySelector(".productSelect");
 let productData = [];
 
 
-function init(){
+function init() {
   getProductList();
 }
 
 //透過axios取得產品列表, 並且將產品卡片渲染在畫面上
-function getProductList(){
+function getProductList() {
   axios.get(`https://livejs-api.hexschool.io/api/livejs/v1/customer/${api_path}/products`)
-.then(function(response){
-  productData = response.data.products;
-  console.log(productData);
-  let str ="";
-  productData.forEach(function(item, index){
-    str +=`<li class="productCard">
+    .then(function (response) {
+      productData = response.data.products;
+      console.log(productData);
+      renderProductList();
+
+    })
+    .catch(function (response) {
+      console.log(response);
+    })
+}
+
+//渲染產品列表到畫面上
+function renderProductList() {
+  let str = "";
+  productData.forEach(function (item, index) {
+    str += `<li class="productCard">
     <h4 class="productType">新品</h4>
     <img src="${item.images}" alt="Antony 雙人">
     <a href="#" id="addCardButton">加入購物車</a>
@@ -23,14 +34,14 @@ function getProductList(){
     <del class="originPrice">NT$${item.origin_price}(這裡的js請不要寫成innterHTML, 前方多寫一個小寫t, 因為這樣VScode也不會報錯, 請留意; 在此先將金額直接寫死; 請記得到時候顯示出來時要在千分位加上逗號)</del>
     <p class="nowPrice">NT$${item.price}</p>
   </li>`;
-  });
+  })
   productList.innerHTML = str;
-})
-.catch(function(response){
-  console.log(response);
-})
-}
+};
 
+//針對下拉式選單監聽
+productSelect.addEventListener("change", function (e) {
+  console.log(e.target.value);
+});
 init();
 
 
