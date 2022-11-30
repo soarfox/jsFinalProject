@@ -1,10 +1,24 @@
 //在本檔案中引用config.js檔案後, 即可測試看看是否有抓到API的路徑與token
 console.log(api_path, token);
 
-axios.get(`https://livejs-api.hexschool.io/api/livejs/v1/customer/${api_path}/products`)
+const productList = document.querySelector(".productWrap");
+console.log(productList);
+
+let str = `<li class="productCard">
+        <h4 class="productType">新品</h4>
+        <img src="https://github.com/soarfox/jsFinalProject/blob/main/images/JlGUkjl.png?raw=true" alt="Antony 雙人">
+        <a href="#" id="addCardButton">加入購物車</a>
+        <h3>Antony 雙人床架/雙人加大</h3>
+        <del class="originPrice">NT$18,000(這裡的js請不要寫成innterHTML, 前方多寫一個小寫t, 因為這樣VScode也不會報錯, 請留意; 在此先將金額直接寫死; 請記得到時候顯示出來時要在千分位加上逗號)</del>
+        <p class="nowPrice">NT$12,000</p>
+      </li>`;
+productList.innerHTML = str;
+console.log(str);
+
+/* axios.get(`https://livejs-api.hexschool.io/api/livejs/v1/customer/${api_path}/products`)
 .then(function(response){
   console.log(response);
-})
+}) */
 
 
 
