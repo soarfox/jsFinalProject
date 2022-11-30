@@ -22,25 +22,46 @@ function getProductList() {
     })
 }
 
+//產品列表的HTML字串串接
+function combimeProductListHTML(item){
+  let str =`<li class="productCard">
+  <h4 class="productType">新品</h4>
+  <img src="${item.images}" alt="Antony 雙人">
+  <a href="#" id="addCardButton">加入購物車</a>
+  <h3>${item.title}</h3>
+  <del class="originPrice">NT$${item.origin_price}(這裡的js請不要寫成innterHTML, 前方多寫一個小寫t, 因為這樣VScode也不會報錯, 請留意; 在此先將金額直接寫死; 請記得到時候顯示出來時要在千分位加上逗號)</del>
+  <p class="nowPrice">NT$${item.price}</p>
+</li>`;
+  return str;
+}
+
 //渲染產品列表到畫面上
 function renderProductList() {
+  //這個str記得要放在forEach外面, 這樣子要渲染資料時才能找到這個str變數
   let str = "";
   productData.forEach(function (item, index) {
-    str += `<li class="productCard">
-    <h4 class="productType">新品</h4>
-    <img src="${item.images}" alt="Antony 雙人">
-    <a href="#" id="addCardButton">加入購物車</a>
-    <h3>${item.title}</h3>
-    <del class="originPrice">NT$${item.origin_price}(這裡的js請不要寫成innterHTML, 前方多寫一個小寫t, 因為這樣VScode也不會報錯, 請留意; 在此先將金額直接寫死; 請記得到時候顯示出來時要在千分位加上逗號)</del>
-    <p class="nowPrice">NT$${item.price}</p>
-  </li>`;
-  })
+    str += combimeProductListHTML(item);
+  });
   productList.innerHTML = str;
 };
 
-//針對下拉式選單監聽
+//針對下拉式選單進行監聽
 productSelect.addEventListener("change", function (e) {
-  console.log(e.target.value);
+  const category = e.target.value;
+  console.log(category);
+  if(category == "全部"){
+    renderProductList();
+    return;
+  }
+  //這個str記得要放在forEach外面, 這樣子要渲染資料時才能找到這個str變數
+  let str = "";
+  productData.forEach(function(item,index){
+    //item抓出產品列表的8筆資料後, 逐一跟監聽事件所選中的資料做比較, 有相同者才會進入if判斷式內進行HTML字串的串接
+    if(item.category == category){
+      str += combimeProductListHTML(item);
+    }
+  });
+  productList.innerHTML = str;
 });
 init();
 
