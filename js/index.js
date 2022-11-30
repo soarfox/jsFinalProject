@@ -1,25 +1,30 @@
 //在本檔案中引用config.js檔案後, 即可測試看看是否有抓到API的路徑與token
 const productList = document.querySelector(".productWrap");
 let productData = [];
-let str = `<li class="productCard">
-        <h4 class="productType">新品</h4>
-        <img src="https://github.com/soarfox/jsFinalProject/blob/main/images/JlGUkjl.png?raw=true" alt="Antony 雙人">
-        <a href="#" id="addCardButton">加入購物車</a>
-        <h3>Antony 雙人床架/雙人加大</h3>
-        <del class="originPrice">NT$18,000(這裡的js請不要寫成innterHTML, 前方多寫一個小寫t, 因為這樣VScode也不會報錯, 請留意; 在此先將金額直接寫死; 請記得到時候顯示出來時要在千分位加上逗號)</del>
-        <p class="nowPrice">NT$12,000</p>
-      </li>`;
-productList.innerHTML = str;
+
 
 function init(){
   getProductList();
 }
 
+//透過axios取得產品列表, 並且將產品卡片渲染在畫面上
 function getProductList(){
   axios.get(`https://livejs-api.hexschool.io/api/livejs/v1/customer/${api_path}/products`)
 .then(function(response){
   productData = response.data.products;
   console.log(productData);
+  let str ="";
+  productData.forEach(function(item, index){
+    str +=`<li class="productCard">
+    <h4 class="productType">新品</h4>
+    <img src="${item.images}" alt="Antony 雙人">
+    <a href="#" id="addCardButton">加入購物車</a>
+    <h3>${item.title}</h3>
+    <del class="originPrice">NT$${item.origin_price}(這裡的js請不要寫成innterHTML, 前方多寫一個小寫t, 因為這樣VScode也不會報錯, 請留意; 在此先將金額直接寫死; 請記得到時候顯示出來時要在千分位加上逗號)</del>
+    <p class="nowPrice">NT$${item.price}</p>
+  </li>`;
+  });
+  productList.innerHTML = str;
 })
 .catch(function(response){
   console.log(response);
