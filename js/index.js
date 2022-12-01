@@ -2,11 +2,12 @@
 const productList = document.querySelector(".productWrap");
 const productSelect = document.querySelector(".productSelect");
 let productData = [];
-
+let cartData = [];
 
 function init() {
   getProductList();
 }
+init();
 
 //透過axios取得產品列表, 並且將產品卡片渲染在畫面上
 function getProductList() {
@@ -22,12 +23,12 @@ function getProductList() {
     })
 }
 
-//產品列表的HTML字串串接
+//產品列表的HTML字串串接, 且在加入購物車的<a>標籤裡, id的後方加入data-id, 令每個產品的加入購物車按鈕都有各自的id, 以利監聽事件監聽是否有某某產品的"加入購物車"已按鈕被點擊到了, 即可做出後續處理; 此外因為我們想要做出當點擊到加入購物車按鈕時, 才做後續處理, 若點擊到該ul裡的其他地方則不執行任何動作, 因此需要在加入購物車的<a>標籤內自行加入一個class name; 且id照理來說只能用一次, 因此這裡是設計師寫錯了
 function combimeProductListHTML(item){
   let str =`<li class="productCard">
   <h4 class="productType">新品</h4>
   <img src="${item.images}" alt="Antony 雙人">
-  <a href="#" id="addCardButton">加入購物車</a>
+  <a href="#" class="js-addCart" id="addCardButton" data-id="${item.id}">加入購物車</a>
   <h3>${item.title}</h3>
   <del class="originPrice">NT$${item.origin_price}(這裡的js請不要寫成innterHTML, 前方多寫一個小寫t, 因為這樣VScode也不會報錯, 請留意; 在此先將金額直接寫死; 請記得到時候顯示出來時要在千分位加上逗號)</del>
   <p class="nowPrice">NT$${item.price}</p>
@@ -63,7 +64,34 @@ productSelect.addEventListener("change", function (e) {
   });
   productList.innerHTML = str;
 });
-init();
+
+productList.addEventListener("click",function(e){
+    //加入preventDefault(); 使"加入購物車"的<a>標籤效果失效, 避免每次點擊加入購物車後, 一直讓網頁跳轉到最上方
+    e.preventDefault();
+    
+    //取得在產品列表內ul自訂的class name, 如果並非加入購物車<a>標籤內的class name, 則不做任何反應
+    let addCartClass = e.target.getAttribute("class");
+    if(addCartClass!=="js-addCart"){
+      //alert("不要亂點唷");
+      return;
+    }
+    //如果程式能通過上方, 執行到這裡, 那就代表使用者有正確點擊到加入購物車<a>標籤, 故取出產品id稍後使用
+    let productId = e.target.getAttribute("data-id");
+    console.log(productId);
+});
+
+function getCartList(){
+  axios.get(`https://livejs-api.hexschool.io/api/livejs/v1/customer/${api_path}/carts`)
+    .then(function (response) {
+      cartData = response.data.carts;
+    })
+    .catch(function (response) {
+      console.log(response);
+    })
+
+};
+
+
 
 
 
