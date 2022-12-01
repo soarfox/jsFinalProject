@@ -1,15 +1,17 @@
 //在本檔案中引用config.js檔案後, 即可測試看看是否有抓到API的路徑與token
 const productList = document.querySelector(".productWrap");
 const productSelect = document.querySelector(".productSelect");
+const cartList = document.querySelector(".shoppingCart-tableList");
 let productData = [];
 let cartData = [];
 
 function init() {
   getProductList();
+  getCartList();
 }
 init();
 
-//透過axios取得產品列表, 並且將產品卡片渲染在畫面上
+//取得API內產品列表的資料
 function getProductList() {
   axios.get(`https://livejs-api.hexschool.io/api/livejs/v1/customer/${api_path}/products`)
     .then(function (response) {
@@ -23,7 +25,17 @@ function getProductList() {
     })
 }
 
-//產品列表的HTML字串串接, 且在加入購物車的<a>標籤裡, id的後方加入data-id, 令每個產品的加入購物車按鈕都有各自的id, 以利監聽事件監聽是否有某某產品的"加入購物車"已按鈕被點擊到了, 即可做出後續處理; 此外因為我們想要做出當點擊到加入購物車按鈕時, 才做後續處理, 若點擊到該ul裡的其他地方則不執行任何動作, 因此需要在加入購物車的<a>標籤內自行加入一個class name; 且id照理來說只能用一次, 因此這裡是設計師寫錯了
+//渲染產品列表到畫面上
+function renderProductList() {
+  //這個str記得要放在forEach外面, 這樣子要渲染資料時才能找到這個str變數
+  let str = "";
+  productData.forEach(function (item, index) {
+    str += combimeProductListHTML(item);
+  });
+  productList.innerHTML = str;
+};
+
+//將產品列表的資訊組合成完整HTML, 且在加入購物車的<a>標籤裡, id的後方加入data-id, 令每個產品的加入購物車按鈕都有各自的id, 以利監聽事件監聽是否有某某產品的"加入購物車"已按鈕被點擊到了, 即可做出後續處理; 此外因為我們想要做出當點擊到加入購物車按鈕時, 才做後續處理, 若點擊到該ul裡的其他地方則不執行任何動作, 因此需要在加入購物車的<a>標籤內自行加入一個class name; 且id照理來說只能用一次, 因此這裡是設計師寫錯了
 function combimeProductListHTML(item){
   let str =`<li class="productCard">
   <h4 class="productType">新品</h4>
@@ -35,16 +47,6 @@ function combimeProductListHTML(item){
 </li>`;
   return str;
 }
-
-//渲染產品列表到畫面上
-function renderProductList() {
-  //這個str記得要放在forEach外面, 這樣子要渲染資料時才能找到這個str變數
-  let str = "";
-  productData.forEach(function (item, index) {
-    str += combimeProductListHTML(item);
-  });
-  productList.innerHTML = str;
-};
 
 //針對下拉式選單進行監聽
 productSelect.addEventListener("change", function (e) {
@@ -80,15 +82,50 @@ productList.addEventListener("click",function(e){
     console.log(productId);
 });
 
+//取得API內購物車清單的資料
 function getCartList(){
   axios.get(`https://livejs-api.hexschool.io/api/livejs/v1/customer/${api_path}/carts`)
     .then(function (response) {
       cartData = response.data.carts;
+      console.log(cartData);
+      renderCartList();
     })
     .catch(function (response) {
       console.log(response);
     })
 
+};
+
+//渲染購物車列表到畫面上
+function renderCartList(){
+  let str = "";
+  cartData.forEach(function(item, index){
+    str += combimeCartListHTML(item);
+  });
+  cartList.innerHTML = str;
+};
+
+//將購物車的資訊組合成完整HTML
+function combimeCartListHTML(item){
+  let singleItemTotalPrice = item.quantity * item.product.price;
+  let str =
+  `<tr>
+    <td>
+      <div class="cardItem-title">
+        <img src="${item.product.images}" alt="">
+        <p>${item.product.title}</p>
+      </div>
+    </td>
+    <td>NT$${item.product.price}</td>
+    <td>${item.quantity}</td>
+    <td>NT$${singleItemTotalPrice}</td>
+    <td class="discardBtn">
+      <a href="#" class="material-icons">
+        clear
+      </a>
+    </td>
+  </tr>`;
+  return str;
 };
 
 
