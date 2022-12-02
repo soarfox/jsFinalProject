@@ -1,9 +1,20 @@
-//在本檔案中引用config.js檔案後, 即可測試看看是否有抓到API的路徑與token
+//在index.html檔案中引用config.js檔案後, 即可在此顯示測試看看是否有抓到API的路徑與token
+console.log(`api_path=${api_path}, token=${token}`);
+
 const productList = document.querySelector(".productWrap");
 const productSelect = document.querySelector(".productSelect");
 const cartList = document.querySelector(".shoppingCart-tableList");
 const cartDelAll = document.querySelector(".discardAllBtn");
 const cartTotalPrice = document.querySelector(".js-total");
+const orderSubmitBtn = document.querySelector(".orderInfo-btn");
+
+ //綁定前台預訂表單各欄位的DOM元素
+ const customerName = document.querySelector("#customerName");
+ const customerPhone = document.querySelector("#customerPhone");
+ const customerEmail = document.querySelector("#customerEmail");
+ const customerAddress = document.querySelector("#customerAddress");
+ const customerTradeWay = document.querySelector("#tradeWay");
+
 let productData = [];
 let cartData = [];
 
@@ -71,7 +82,7 @@ productSelect.addEventListener("change", function (e) {
 
 //當使用者對產品按下加入購物車時
 productList.addEventListener("click", function (e) {
-  //加入preventDefault(); 使HTML <a>標籤原本的效果失效, 避免每次點擊一次, 網頁就自動跳轉回最上方
+  //加入preventDefault(); 取消默認的HTML <a>標籤行為
   e.preventDefault();
 
   //取得在產品列表內ul自訂的class name, 如果並非加入購物車<a>標籤內的class name, 則不做任何反應
@@ -170,7 +181,7 @@ function postCartList(addProductId, addQuantity) {
 
 //當購物車內單一品項的刪除按鈕被點擊時
 cartList.addEventListener("click", function (e) {
-  //加入preventDefault(); 使HTML <a>標籤原本的效果失效, 避免每次點擊一次, 網頁就自動跳轉回最上方
+  //加入preventDefault(); 取消默認的HTML <a>標籤行為
   e.preventDefault();
   //抓取自行埋設在刪除按鈕上的id
   const cartId = e.target.getAttribute("data-id");
@@ -207,8 +218,9 @@ function delCartItem(wantDelCartItemId, wantDelCartItemTitle) {
 
 //當購物車的刪除所有品項按鈕被點擊時
 cartDelAll.addEventListener("click", function (e) {
-  //加入preventDefault(); 使HTML <a>標籤原本的效果失效, 避免每次點擊一次, 網頁就自動跳轉回最上方
+  //加入preventDefault(); 取消默認的HTML <a>標籤行為
   e.preventDefault();
+
   delCartAllItem();
 });
 
@@ -229,4 +241,67 @@ function delCartAllItem() {
       alert(`您已清空購物車了, 請勿再次點擊`);
       console.log(response);
     })
+};
+
+//當使用者按下送出預定資料按鈕時
+orderSubmitBtn.addEventListener("click", function(e){
+  //加入preventDefault(); 取消默認的HTML標籤行為
+  e.preventDefault();
+  
+  //依據最終關卡任務的"最終關卡流程圖_DOM 與 API 介接"所述, 需先確認購物車內是否有品項, 如有才能繼續走送出訂單的流程
+  if(cartData.length == ""){
+    alert("請先將商品加入購物車, 才能送出訂單");
+    return;
+  }
+
+  let user = {};
+
+  //依據最終關卡任務的"最終關卡流程圖_DOM 與 API 介接"所述, 需先確認訂單資訊各欄位的值是否都有完整填寫, 如有才能繼續走送出訂單的流程
+  //確認前台使用者在訂單上填寫的資料是否完整; 因為已先在最外層先抓出訂單的各項DOM元素, 故在此要使用.value來取得使用者在此時於表單的各欄位所輸入的內容並進行判斷
+  if(customerName.value === "" || customerPhone.value === "" || customerEmail.value === "" || customerAddress.value === "" || customerTradeWay.value === ""){
+    alert("您的訂單資訊需填寫完整");
+    return;
+  }else{
+      //將使用者填的訂單資料組合成一個user物件
+      user.name = customerName.value;
+      user.tel = customerPhone.value;
+      user.email = customerEmail.value;
+      user.address = customerAddress.value;
+      user.payment = customerTradeWay.value;
+  }
+  console.log(user);
+  postOrder(user);
+});
+
+//增加一筆訂單, API網址後需包含一個data物件, 該物件內需包含使用者填寫的訂單資訊
+function postOrder(user) {
+  axios.post(`https://livejs-api.hexschool.io/api/livejs/v1/customer/${api_path}/orders`, {
+    data: {
+      user
+    }
+  })
+    .then(function (response) {
+      console.log(response.data);
+      alert("加入訂單成功");
+      
+      //送出訂單後, 重新取得購物車API的資料, 發現購物車已經清空了
+      getCartList();
+
+      //將訂單輸入內容清空
+      clearOrderInfo();
+    })
+    .catch(function (response) {
+      console.log(response);
+    })
+
+};
+
+//清空使用者在畫面上輸入的各項訂單資訊
+function clearOrderInfo(){
+  customerName.value = "";
+  customerPhone.value = "";
+  customerEmail.value = "";
+  customerAddress.value = "";
+  //預設的內容是ATM
+  customerTradeWay.value = "ATM";
 };
