@@ -2,6 +2,8 @@
 const productList = document.querySelector(".productWrap");
 const productSelect = document.querySelector(".productSelect");
 const cartList = document.querySelector(".shoppingCart-tableList");
+const cartDelAll = document.querySelector(".discardAllBtn");
+const cartTotalPrice = document.querySelector(".js-total");
 let productData = [];
 let cartData = [];
 
@@ -11,7 +13,7 @@ function init() {
 }
 init();
 
-//取得API內產品列表的資料
+//取得產品列表的資料
 function getProductList() {
   axios.get(`https://livejs-api.hexschool.io/api/livejs/v1/customer/${api_path}/products`)
     .then(function (response) {
@@ -36,8 +38,8 @@ function renderProductList() {
 };
 
 //將產品列表的資訊組合成完整HTML, 且在加入購物車的<a>標籤裡, id的後方加入data-id, 令每個產品的加入購物車按鈕都有各自的id, 以利監聽事件監聽是否有某某產品的"加入購物車"已按鈕被點擊到了, 即可做出後續處理; 此外因為我們想要做出當點擊到加入購物車按鈕時, 才做後續處理, 若點擊到該ul裡的其他地方則不執行任何動作, 因此需要在加入購物車的<a>標籤內自行加入一個class name; 且id照理來說只能用一次, 因此這裡是設計師寫錯了
-function combimeProductListHTML(item){
-  let str =`<li class="productCard">
+function combimeProductListHTML(item) {
+  let str = `<li class="productCard">
   <h4 class="productType">新品</h4>
   <img src="${item.images}" alt="Antony 雙人">
   <a href="#" class="js-addCart" id="addCardButton" data-id="${item.id}">加入購物車</a>
@@ -52,53 +54,58 @@ function combimeProductListHTML(item){
 productSelect.addEventListener("change", function (e) {
   const category = e.target.value;
   console.log(category);
-  if(category == "全部"){
+  if (category == "全部") {
     renderProductList();
     return;
   }
   //這個str記得要放在forEach外面, 這樣子要渲染資料時才能找到這個str變數
   let str = "";
-  productData.forEach(function(item,index){
+  productData.forEach(function (item, index) {
     //item抓出產品列表的8筆資料後, 逐一跟監聽事件所選中的資料做比較, 有相同者才會進入if判斷式內進行HTML字串的串接
-    if(item.category == category){
+    if (item.category == category) {
       str += combimeProductListHTML(item);
     }
   });
   productList.innerHTML = str;
 });
 
-productList.addEventListener("click",function(e){
-    //加入preventDefault(); 使"加入購物車"的<a>標籤效果失效, 避免每次點擊加入購物車後, 一直讓網頁跳轉到最上方
-    e.preventDefault();
-    
-    //取得在產品列表內ul自訂的class name, 如果並非加入購物車<a>標籤內的class name, 則不做任何反應
-    let addCartClass = e.target.getAttribute("class");
-    if(addCartClass!=="js-addCart"){
-      alert("不要亂點唷");
-      return;
-    }
-    //如果程式能通過上方, 執行到這裡, 那就代表使用者有正確點擊到加入購物車<a>標籤, 故取出產品id稍後使用
-    let productId = e.target.getAttribute("data-id");
-    console.log(productId);
+//當使用者對產品按下加入購物車時
+productList.addEventListener("click", function (e) {
+  //加入preventDefault(); 使HTML <a>標籤原本的效果失效, 避免每次點擊一次, 網頁就自動跳轉回最上方
+  e.preventDefault();
 
-    //當使用者對產品按下加入購物車之後, 先檢查購物車內該品項的數量後, 再加1ㄋ
-    let checkProductNum = 1;
-    cartData.forEach(function(item, index){
-      //如果使用者對某產品按下加入購物車按鈕, 則如果購物車內產品id和該被點擊加入的產品的id相符, 代表購物車內已有該產品, 故把該數量取出來後加1; 否則就維持預設數量1, 稍後把產品id和數量傳給API進行資料登錄
-      if (item.product.id === productId){
-        checkProductNum = item.quantity +=1;
-      }
-      
-    });
-    alert("已將產品加入購物車");
-    console.log(`checkProductNum=${checkProductNum}`);
-    postCartList(productId, checkProductNum);
+  //取得在產品列表內ul自訂的class name, 如果並非加入購物車<a>標籤內的class name, 則不做任何反應
+  let addCartClass = e.target.getAttribute("class");
+  if (addCartClass !== "js-addCart") {
+    alert("如果您欲將產品加入購物車, 請點擊'加入購物車'按鈕");
+    return;
+  }
+  //如果程式能通過上方, 執行到這裡, 那就代表使用者有正確點擊到加入購物車<a>標籤, 故取出產品id稍後使用
+  let productId = e.target.getAttribute("data-id");
+  //console.log(productId);
+
+  //當使用者對產品按下加入購物車之後, 先檢查購物車內該品項的數量後, 再加1ㄋ
+  let checkProductNum = 1;
+  cartData.forEach(function (item, index) {
+    //如果使用者對某產品按下加入購物車按鈕, 則如果購物車內產品id和該被點擊加入的產品的id相符, 代表購物車內已有該產品, 故把該數量取出來後加1; 否則就維持預設數量1, 稍後把產品id和數量傳給API進行資料登錄
+    if (item.product.id === productId) {
+      checkProductNum = item.quantity += 1;
+    }
+
+  });
+  alert("已將產品加入購物車");
+  //console.log(`checkProductNum=${checkProductNum}`);
+  postCartList(productId, checkProductNum);
 });
 
-//取得API內購物車清單的資料
-function getCartList(){
+//取得購物車清單的資料
+function getCartList() {
   axios.get(`https://livejs-api.hexschool.io/api/livejs/v1/customer/${api_path}/carts`)
     .then(function (response) {
+
+      //將API回傳的購物車總金額顯示在畫面上
+      cartTotalPrice.textContent = response.data.finalTotal;
+
       cartData = response.data.carts;
       console.log(cartData);
       renderCartList();
@@ -110,18 +117,18 @@ function getCartList(){
 };
 
 //渲染購物車列表到畫面上
-function renderCartList(){
+function renderCartList() {
   let str = "";
-  cartData.forEach(function(item, index){
+  cartData.forEach(function (item, index) {
     str += combimeCartListHTML(item);
   });
   cartList.innerHTML = str;
 };
 
 //將購物車的資訊組合成完整HTML
-function combimeCartListHTML(item){
+function combimeCartListHTML(item) {
   let str =
-  `<tr>
+    `<tr>
     <td>
       <div class="cardItem-title">
         <img src="${item.product.images}" alt="">
@@ -132,7 +139,7 @@ function combimeCartListHTML(item){
     <td>${item.quantity}</td>
     <td>NT$${item.product.price * item.quantity}</td>
     <td class="discardBtn">
-      <a href="#" class="material-icons">
+      <a href="#" class="material-icons" data-id="${item.id}" data-productTitle="${item.product.title}">
         clear
       </a>
     </td>
@@ -140,16 +147,17 @@ function combimeCartListHTML(item){
   return str;
 };
 
-
 //增加產品到購物車清單內
-function postCartList(addProductId, addQuantity){
-  axios.post(`https://livejs-api.hexschool.io/api/livejs/v1/customer/${api_path}/carts`,{
+function postCartList(addProductId, addQuantity) {
+  axios.post(`https://livejs-api.hexschool.io/api/livejs/v1/customer/${api_path}/carts`, {
     data: {
       "productId": addProductId,
       "quantity": addQuantity
     }
   })
     .then(function (response) {
+      //將API回傳的購物車總金額顯示在畫面上
+      cartTotalPrice.textContent = response.data.finalTotal;
       cartData = response.data.carts;
       console.log(cartData);
       renderCartList();
@@ -160,182 +168,65 @@ function postCartList(addProductId, addQuantity){
 
 };
 
-
-
-
-
-
-
-
-/* 
-
-//產品 DOM
-const productList = document.querySelector('.productList');
-const cartList = document.querySelector('.cartList');
-const productCategory = document.querySelector('.productCategory');
-let productData = [];
-let cartData = [];
-
-function init(){
-  getProductList();
-  getCartList();
-}
-init();
-// 取得產品列表
-function getProductList(){
-  axios.get(`https://livejs-api.hexschool.io/api/livejs/v1/customer/${api_path}/products`).
-    then(function (response) {
-      productData = response.data.products;
-      renderProductList();
-    })
-}
-
-function renderProductList(){
-  let str = "";
-  productData.forEach(function(item){
-    str+=`<li>${item.title}<input value="加入購物車" data-id="${item.id}" class="js-addCart" type="button"></li>`
-  })
-  productList.innerHTML = str;
-}
-
-productCategory.addEventListener('change',function(e){
-  let category = e.target.value;
-  if(category=="全部"){
-    renderProductList();
-    return;
-  }
-  let str = "";
-  productData.forEach(function (item) {
-    if (item.category == category ){
-      str += `<li>${item.title}<input value="加入購物車" data-id="${item.id}" class="js-addCart" type="button"></li>`;
-    }
-  })
-  productList.innerHTML = str;
-  
-})
-
-productList.addEventListener('click',function(e){
-  let addCartClass = e.target.getAttribute("class");
-  if (addCartClass !=="js-addCart"){
-    return;
-  }
-  let productId = e.target.getAttribute("data-id");
-  addCartItem(productId);
-})
-
-// 取得購物車列表
-function getCartList() {
-  axios.get(`https://livejs-api.hexschool.io/api/livejs/v1/customer/${ api_path }/carts`).
-    then(function (response) {
-      cartData = response.data.carts;
-      
-      let str = "";
-      cartData.forEach(function(item){
-        str += `<li>${item.product.title}，${item.quantity}個 <input type="button" data-id="${item.id}" value="移除購物車"></li>`
-      })
-      cartList.innerHTML = str;
-    })
-}
-
-// 加入購物車
-function addCartItem(id){
-  let numCheck = 1;
-  cartData.forEach(function(item){
-    if (item.product.id === id) {
-      numCheck = item.quantity += 1;
-    }
-  })
-  axios.post(`https://livejs-api.hexschool.io/api/livejs/v1/customer/${api_path}/carts`,{
-    data: {
-      "productId": id,
-      "quantity": numCheck
-    }
-  }).
-    then(function (response) {
-      alert("加入購物車成功");
-      getCartList();
-    })
-
-}
-
-// 刪除購物車內特定產品
-cartList.addEventListener('click', function (e) {
-  let cartId = e.target.getAttribute('data-id');
+//當購物車內單一品項的刪除按鈕被點擊時
+cartList.addEventListener("click", function (e) {
+  //加入preventDefault(); 使HTML <a>標籤原本的效果失效, 避免每次點擊一次, 網頁就自動跳轉回最上方
+  e.preventDefault();
+  //抓取自行埋設在刪除按鈕上的id
+  const cartId = e.target.getAttribute("data-id");
+  //抓取自行埋設在刪除按鈕上的產品名稱, 用於當刪除該項目時可顯示其產品名稱
+  const cartProductTitle = e.target.getAttribute("data-productTitle");
+  //如果使用者點到ul的他處則cartId的值會為null, 故可跳出提示告知您點擊到他處了
   if (cartId == null) {
+    alert("您點到別的地方囉!");
     return;
   }
-  deleteCartItem(cartId);
+  //console.log(`您點到的是刪除按鈕沒錯, 產品名稱:${cartProductTitle}`);
+  delCartItem(cartId, cartProductTitle);
 
-})
-function deleteCartItem(cartId) {
-  axios.delete(`https://livejs-api.hexschool.io/api/livejs/v1/customer/${api_path}/carts/${cartId}`)
-  .then(function (response) {
-    alert("刪除單筆購物車成功！");
-    getCartList();
-  })
-  
-}
+});
 
-// 清除購物車內全部產品
-const deleteAllCartBtn = document.querySelector('.deleteAllCartBtn');
-function deleteAllCartList(){
-  axios.delete(`https://livejs-api.hexschool.io/api/livejs/v1/customer/${api_path}/carts`)
-  .then(function (response) {
-      alert("刪除全部購物車成功！");
-      getCartList();
-  })
-  .catch(function (response) {
-    alert("購物車已清空，請勿重複點擊！")
-  })
-}
-deleteAllCartBtn.addEventListener('click',function(e){
-  deleteAllCartList();
-})
+//刪除購物車清單內單一品項的資料
+function delCartItem(wantDelCartItemId, wantDelCartItemTitle) {
+  axios.delete(`https://livejs-api.hexschool.io/api/livejs/v1/customer/${api_path}/carts/${wantDelCartItemId}`)
+    .then(function (response) {
+      //將API回傳的購物車總金額顯示在畫面上
+      cartTotalPrice.textContent = response.data.finalTotal;
 
-
-
-// 送出購買訂單
-const sendOrder = document.querySelector('.sendOrder');
-sendOrder.addEventListener('click',function(e){
-  let carthLength = document.querySelectorAll(".cartList li").length;
-  if (carthLength==0){
-    alert("請加入至少一個購物車品項！");
-    return;
-  }
-  let orderName = document.querySelector('.orderName').value;
-  let orderTel = document.querySelector('.orderTel').value;
-  let orderEmail = document.querySelector('.orderEmail').value;
-  let orderAddress = document.querySelector('.orderAddress').value;
-  let orderPayment = document.querySelector('.orderPayment').value;
-  if (orderName == "" || orderTel == "" || orderEmail == "" || orderAddress==""){
-    alert("請輸入訂單資訊！");
-    return;
-  }
-  let data = {
-    name: orderName,
-    tel: orderTel,
-    Email: orderEmail,
-    address: orderAddress,
-    payment: orderPayment
-  }
-  createOrder(data);
-})
-function createOrder(item){
-  axios.post(`https://livejs-api.hexschool.io/api/livejs/v1/customer/${api_path}/orders`,
-    {
-      "data": {
-        "user": {
-          "name": item.name,
-          "tel": item.tel,
-          "email": item.Email,
-          "address": item.address,
-          "payment": item.payment
-        }
-      }
-    }
-  ).then(function (response) {
-      alert("訂單建立成功!")
-      getCartList();
+      //當刪除單一品項完畢後, 在此要接收購物車的新資料, 這樣才能及時將cartData變數內的資料做更新, 然後呼叫渲染購物車列表函式時, 才會立刻顯示最新的購物車列表內容在畫面上
+      cartData = response.data.carts;
+      console.log(cartData);
+      alert(`您已刪除購物車內的"${wantDelCartItemTitle}"品項了`);
+      renderCartList();
     })
-}
- */
+    .catch(function (response) {
+      console.log(response);
+    })
+
+};
+
+//當購物車的刪除所有品項按鈕被點擊時
+cartDelAll.addEventListener("click", function (e) {
+  //加入preventDefault(); 使HTML <a>標籤原本的效果失效, 避免每次點擊一次, 網頁就自動跳轉回最上方
+  e.preventDefault();
+  delCartAllItem();
+});
+
+//刪除購物車清單所有資料
+function delCartAllItem() {
+  axios.delete(`https://livejs-api.hexschool.io/api/livejs/v1/customer/${api_path}/carts`)
+    .then(function (response) {
+      //將API回傳的購物車總金額顯示在畫面上
+      cartTotalPrice.textContent = response.data.finalTotal;
+
+      //當刪除所有品項完畢後, 在此要接收購物車的新資料, 這樣才能及時將cartData變數內的資料做更新, 然後呼叫渲染購物車列表函式時, 才會立刻顯示最新的購物車列表內容在畫面上
+      cartData = response.data.carts;
+      console.log(cartData);
+      alert(`您已清空購物車了`);
+      renderCartList();
+    })
+    .catch(function (response) {
+      alert(`您已清空購物車了, 請勿再次點擊`);
+      console.log(response);
+    })
+};
