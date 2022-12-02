@@ -74,12 +74,25 @@ productList.addEventListener("click",function(e){
     //取得在產品列表內ul自訂的class name, 如果並非加入購物車<a>標籤內的class name, 則不做任何反應
     let addCartClass = e.target.getAttribute("class");
     if(addCartClass!=="js-addCart"){
-      //alert("不要亂點唷");
+      alert("不要亂點唷");
       return;
     }
     //如果程式能通過上方, 執行到這裡, 那就代表使用者有正確點擊到加入購物車<a>標籤, 故取出產品id稍後使用
     let productId = e.target.getAttribute("data-id");
     console.log(productId);
+
+    //當使用者對產品按下加入購物車之後, 先檢查購物車內該品項的數量後, 再加1ㄋ
+    let checkProductNum = 1;
+    cartData.forEach(function(item, index){
+      //如果使用者對某產品按下加入購物車按鈕, 則如果購物車內產品id和該被點擊加入的產品的id相符, 代表購物車內已有該產品, 故把該數量取出來後加1; 否則就維持預設數量1, 稍後把產品id和數量傳給API進行資料登錄
+      if (item.product.id === productId){
+        checkProductNum = item.quantity +=1;
+      }
+      
+    });
+    alert("已將產品加入購物車");
+    console.log(`checkProductNum=${checkProductNum}`);
+    postCartList(productId, checkProductNum);
 });
 
 //取得API內購物車清單的資料
@@ -107,7 +120,6 @@ function renderCartList(){
 
 //將購物車的資訊組合成完整HTML
 function combimeCartListHTML(item){
-  let singleItemTotalPrice = item.quantity * item.product.price;
   let str =
   `<tr>
     <td>
@@ -118,7 +130,7 @@ function combimeCartListHTML(item){
     </td>
     <td>NT$${item.product.price}</td>
     <td>${item.quantity}</td>
-    <td>NT$${singleItemTotalPrice}</td>
+    <td>NT$${item.product.price * item.quantity}</td>
     <td class="discardBtn">
       <a href="#" class="material-icons">
         clear
@@ -129,7 +141,24 @@ function combimeCartListHTML(item){
 };
 
 
+//增加產品到購物車清單內
+function postCartList(addProductId, addQuantity){
+  axios.post(`https://livejs-api.hexschool.io/api/livejs/v1/customer/${api_path}/carts`,{
+    data: {
+      "productId": addProductId,
+      "quantity": addQuantity
+    }
+  })
+    .then(function (response) {
+      cartData = response.data.carts;
+      console.log(cartData);
+      renderCartList();
+    })
+    .catch(function (response) {
+      console.log(response);
+    })
 
+};
 
 
 
