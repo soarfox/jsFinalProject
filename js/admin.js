@@ -1,3 +1,7 @@
+//在admin.html檔案中引用config.js檔案後, 即可在此顯示測試看看是否有抓到API的路徑與token
+console.log(`api_path=${api_path}, token=${token}`);
+
+/* 
 // DOM
 const orderList = document.querySelector(".orderList");
 const deleteAllOrderBtn = document.querySelector('.deleteAllOrderBtn');
@@ -115,3 +119,4 @@ deleteAllOrderBtn.addEventListener('click', function (e) {
 })
 
 
+ */
