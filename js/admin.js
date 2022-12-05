@@ -23,14 +23,52 @@ function getOrderList() {
   })
     .then(function (response) {
       orderData = response.data.orders;
+      console.log("orderData資料如下");
       console.log(orderData);
       renderOrderList();
+
+      //統計所有訂單內各個產品分類與總金額
+      tinyOrderProductCategory();
 
     })
     .catch(function (response) {
       console.log(response);
     })
 }
+
+//將所有訂單的各個產品分類及總金額進行統計
+function tinyOrderProductCategory(){
+  console.log("----orderData資料如下, 準備開始整理----");
+  //console.log(orderData);
+  let tempObj = {};
+
+  //將每一筆訂單內的每一個產品的分類與金額進行統計
+  orderData.forEach(function(item, index){
+    item.products.forEach(function(item, index){
+      //若物件內沒有該品項, 則值為null而非""(空字串)
+      if(tempObj[item.category] == null){
+        tempObj[item.category] = item.price;
+      }else{
+        //物件屬性的值是字串, 故需要先轉型為整數後,才能跟本次的產品加額相加
+        tempObj[item.category] = parseInt(tempObj[item.category]) + parseInt(item.price);
+      }
+    });
+  });
+
+  console.log(tempObj);
+  /* 
+  orderData.forEach(function(item, index){
+    item.products.forEach(function(item, index){
+      if (category[item.category] == ""){
+        category[item.category] = 1;
+        console.log(category[item.category]);
+      }else{
+        category[item.category] += 1;
+        console.log(category[item.category]);
+      }
+    }); */
+
+};
 
 //將訂單列表的資訊組合成完整HTML, 且在刪除該品項標籤裡, id的後方加入data-id, 令每個產品的刪除按鈕都有各自的id, 以利監聽事件監聽是否有某某產品的"刪除"按鈕已被點擊到了, 即可做出後續處理; 此外因為我們想要做出當點擊到刪除按鈕時, 才做後續處理, 若點擊到該ul裡的其他地方則不執行任何動作, 因此需要在刪除產品的標籤內自行加入一個id
 function renderOrderList(){
@@ -139,7 +177,6 @@ function delOneOrder(orderId){
       //console.log(`已刪除訂單編號${orderId}完成`);
       alert(`已刪除訂單編號${orderId}完成`);
       renderOrderList();
-
     })
     .catch(function (response) {
       console.log(response);
