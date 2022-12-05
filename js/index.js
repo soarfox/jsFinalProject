@@ -189,7 +189,7 @@ cartList.addEventListener("click", function (e) {
   const cartProductTitle = e.target.getAttribute("data-productTitle");
   //如果使用者點到ul的他處則cartId的值會為null, 故可跳出提示告知您點擊到他處了
   if (cartId == null) {
-    alert("您點到別的地方囉!");
+    //alert("您點到別的地方囉!");
     return;
   }
   //console.log(`您點到的是刪除按鈕沒錯, 產品名稱:${cartProductTitle}`);
