@@ -137,7 +137,7 @@ function delOneOrder(orderId){
     .then(function (response) {
       orderData = response.data.orders;
       //console.log(`已刪除訂單編號${orderId}完成`);
-      alert(`已刪除訂單編號${delItemId}完成`);
+      alert(`已刪除訂單編號${orderId}完成`);
       renderOrderList();
 
     })
