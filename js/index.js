@@ -1,6 +1,11 @@
 //在index.html檔案中引用config.js檔案後, 即可在此顯示測試看看是否有抓到API的路徑與token
 console.log(`api_path=${api_path}, token=${token}`);
 
+//API所需的headers設為一個物件, 以利直接帶入即可使用
+const headers = {
+  'Authorization': token
+};
+
 const productList = document.querySelector(".productWrap");
 const productSelect = document.querySelector(".productSelect");
 const cartList = document.querySelector(".shoppingCart-tableList");
@@ -269,18 +274,21 @@ orderSubmitBtn.addEventListener("click", function(e){
       user.address = customerAddress.value;
       user.payment = customerTradeWay.value;
   }
-  console.log(user);
-  postOrder(user);
+  //console.log(user);
+
+  //因為增加一筆訂單的API, 其需包含一個名稱為data的物件, 該物件內需包含使用者填寫的訂單資訊, 再呼叫函式傳送過去給API使用
+  let data = {
+    user
+  };
+  postOrder(data);
 });
 
 //增加一筆訂單, API網址後需包含一個data物件, 該物件內需包含使用者填寫的訂單資訊
-function postOrder(user) {
-  axios.post(`https://livejs-api.hexschool.io/api/livejs/v1/customer/${api_path}/orders`, {
-    data: {
-      user
-    }
-  })
-    .then(function (response) {
+function postOrder(data) {
+  axios.post(`https://livejs-api.hexschool.io/api/livejs/v1/customer/${api_path}/orders`, 
+  {
+    data
+  }).then(function (response) {
       console.log(response.data);
       alert("加入訂單成功");
       

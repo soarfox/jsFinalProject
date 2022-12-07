@@ -1,6 +1,11 @@
 //在admin.html檔案中引用config.js檔案後, 即可在此顯示測試看看是否有抓到API的路徑與token
 console.log(`api_path=${api_path}, token=${token}`);
 
+//API所需的headers設為一個物件, 以利直接帶入即可使用
+const headers = {
+  'Authorization': token
+};
+
 //針對訂單列表(HTML的<tbody>標籤)進行綁定
 const orderList = document.querySelector(".js-orderList");
 
@@ -16,11 +21,7 @@ init();
 
 //取得訂單列表的資料
 function getOrderList() {
-  axios.get(`https://livejs-api.hexschool.io/api/livejs/v1/admin/${api_path}/orders`, {
-    headers: {
-      'Authorization': token
-    }
-  })
+  axios.get(`https://livejs-api.hexschool.io/api/livejs/v1/admin/${api_path}/orders`, {headers})
     .then(function (response) {
       orderData = response.data.orders;
       console.log("orderData資料如下");
@@ -81,6 +82,7 @@ function renderOrderList() {
   orderData.forEach(function (item, index) {
     let orderProductsTitle = "";
     let orderDate = "";
+    let orderOperationStats = "";
 
     //每筆訂單內可能不只包含一個產品, 有可能有兩個以上的產品, 故需要把該訂單內的所有品項都撈出來做顯示
     item.products.forEach(function (item, index) {
@@ -90,12 +92,19 @@ function renderOrderList() {
     //將訂單的日期時間透過函式進行轉換
     orderDate = transferToDateTime(item.createdAt);
 
-    str += combimeOrderListHTML(item, orderProductsTitle, orderDate);
+    //判斷該筆訂單是否已經付款, 若true(在API回傳的結果, 此資料為布林值而非字串, 因此下方if判斷式內的true不可加上雙引號)則顯示已處理; 反之則顯示未處理
+    if(item.paid === true){
+      orderOperationStats = "已處理";
+    }else{
+      orderOperationStats = "未處理";
+    }
+
+    str += combimeOrderListHTML(item, orderProductsTitle, orderDate, orderOperationStats);
   });
   orderList.innerHTML = str;
 };
 
-function combimeOrderListHTML(item, orderProductsTitle, orderDate) {
+function combimeOrderListHTML(item, orderProductsTitle, orderDate, orderOperationStats) {
 
   let str = `
   <tr>
@@ -111,7 +120,7 @@ function combimeOrderListHTML(item, orderProductsTitle, orderDate) {
     </td>
     <td>${orderDate}</td>
     <td class="orderStatus">
-      <a href="#" class="orderOperation" data-id="${item.id}">未處理</a>
+      <a href="#" class="orderOperation" data-id="${item.id}">${orderOperationStats}</a>
     </td>
     <td>
       <input type="button" class="delSingleOrder-Btn" data-id="${item.id}" value="刪除">
@@ -161,19 +170,27 @@ orderList.addEventListener("click", function (e) {
   //因為在訂單列表中有兩種按鈕(訂單處理情形與刪除訂單按鈕), 且均有埋設各自的class name和id, 故在此判斷管理者點擊到的是哪一個按鈕
   let orderClass = e.target.getAttribute("class");
 
-  //抓取訂單列表的目標文字, 藉此判斷訂單處理狀態是未處理/已處理 
-  let orderOperationText = e.target.textContent;
+  //抓取被點擊到的那一筆訂單狀態, 內部自行埋設的訂單id
+  const operationItemId = e.target.getAttribute("data-id");
+
+  //抓取被點擊到的那一筆訂單狀態, 其當前狀態 (如果是未處理, 則稍後呼叫API修改其為已處理(將資料改為ture); 反之, 則修改成未處理(將資料改為false))
+  const operationText = e.target.text;
+
+  //修改訂單狀態的API, 其需包含一個名稱為data的物件, 故先將data物件組合好之後, 再呼叫函式傳送過去給API使用
+  let data = {};
 
   //當管理者點擊到訂單處理按鈕時
   if(orderClass === "orderOperation"){
-    const orderOperation = document.querySelector(".orderOperation");
-    if(orderOperationText === "未處理"){
-      orderOperation.textContent = "已處理";
+    //將該筆"訂單id"與"下方調整後的訂單狀態"組合成一個data物件
+    data.id = operationItemId;
+
+    if(operationText === "未處理"){
+      data.paid = true;
     }else{
-      orderOperation.textContent = "未處理";
+      data.paid = false;
     }
-    alert("此筆訂單狀態已調整");
-    return;
+    //修改訂單狀態資訊 (如當前為未處理, 則呼叫API改成已處理; 反之, 則呼叫API改成未處理)
+    putOneOrder(data);
   }
   //當管理者點擊到刪除訂單按鈕時
   else if(orderClass === "delSingleOrder-Btn"){
@@ -188,13 +205,27 @@ orderList.addEventListener("click", function (e) {
   }
 });
 
+function putOneOrder(data) {
+  //此處的{data}必定要擺在{headers}前方, 如果兩者擺放位置對換, 則此API會回傳403(非API本人使用)的錯誤訊息
+  axios.put(`https://livejs-api.hexschool.io/api/livejs/v1/admin/${api_path}/orders`,
+  {
+    data
+  },
+  {
+    headers
+  }).then(function (response) {
+      orderData = response.data.orders;
+      alert(`已調整訂單狀態完成`);
+      renderOrderList();
+    })
+    .catch(function (response) {
+      console.log(response);
+    })
+};
+
 //刪除單一一張訂單資料
 function delOneOrder(orderId) {
-  axios.delete(`https://livejs-api.hexschool.io/api/livejs/v1/admin/${api_path}/orders/${orderId}`, {
-    headers: {
-      'Authorization': token
-    }
-  })
+  axios.delete(`https://livejs-api.hexschool.io/api/livejs/v1/admin/${api_path}/orders/${orderId}`, {headers})
     .then(function (response) {
       orderData = response.data.orders;
       //console.log(`已刪除訂單編號${orderId}完成`);
@@ -228,11 +259,7 @@ discardAllBtn.addEventListener("click", function (e) {
 
 //清除全部訂單
 function derlAllOrders() {
-  axios.delete(`https://livejs-api.hexschool.io/api/livejs/v1/admin/${api_path}/orders/`, {
-    headers: {
-      'Authorization': token
-    }
-  })
+  axios.delete(`https://livejs-api.hexschool.io/api/livejs/v1/admin/${api_path}/orders/`, {headers})
     .then(function (response) {
       orderData = response.data.orders;
       alert(`已刪除所有訂單資料`);
