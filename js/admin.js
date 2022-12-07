@@ -1,5 +1,5 @@
 //在admin.html檔案中引用config.js檔案後, 即可在此顯示測試看看是否有抓到API的路徑與token
-console.log(`api_path=${api_path}, token=${token}`);
+//console.log(`api_path=${api_path}, token=${token}`);
 
 //API所需的headers設為一個物件, 以利直接帶入即可使用
 const headers = {
@@ -13,6 +13,12 @@ const discardAllBtn = document.querySelector(".discardAllBtn");
 
 let orderData = [];
 
+//c3.js函式繪製全產品類別營收比重時, 所使用的資料儲存空間
+let OrderProductCategoryForC3 = [];
+
+//c3.js函式繪製全產品營收比重時, 所使用的資料儲存空間
+let AllProductsOfOrdersForC3 = [];
+
 function init() {
   getOrderList();
 };
@@ -24,13 +30,15 @@ function getOrderList() {
   axios.get(`https://livejs-api.hexschool.io/api/livejs/v1/admin/${api_path}/orders`, {headers})
     .then(function (response) {
       orderData = response.data.orders;
-      console.log("orderData資料如下");
-      console.log(orderData);
       renderOrderList();
+
+      console.log(orderData);
 
       //統計所有訂單內各個產品分類與總金額
       tinyOrderProductCategory();
 
+      //將所有訂單的各項產品及金額進行統計
+      tinyAllProductsOfOrders();
     })
     .catch(function (response) {
       console.log(response);
@@ -39,41 +47,103 @@ function getOrderList() {
 
 //將所有訂單的各個產品分類及總金額進行統計
 function tinyOrderProductCategory() {
-  console.log("----orderData資料如下, 準備開始整理----");
-  //console.log(orderData);
   let tempObj = {};
-
-  //將每一筆訂單內的每一個產品的分類與金額進行統計
+  //因每筆訂單內可能不只包含一個產品, 可能會有兩個以上的產品, 故將每一筆訂單內的每一種產品分類與總金額進行統計
   orderData.forEach(function (item, index) {
     item.products.forEach(function (item, index) {
-      //若物件內沒有該品項, 則值為null而非""(空字串)
+      //若物件內沒有該產品種類, 則值為null而非""(空字串)
       if (tempObj[item.category] == null) {
         tempObj[item.category] = item.price;
       } else {
-        //物件屬性的值是字串, 故需要先轉型為整數後,才能跟本次的產品加額相加
+        //tempObj[item.title]代表取出該品項的值(也就是取出該品項的金額), 而因為物件的值是字串型態, 故需要先將其轉型為整數後,才能跟本次的產品金額相加
         tempObj[item.category] = parseInt(tempObj[item.category]) + parseInt(item.price);
       }
     });
   });
 
-  console.log(tempObj);
+  //將現有物件資料調整為c3.js所接受的"陣列內有多個小陣列"的格式
+  OrderProductCategoryForC3 = chageObjToArrForC3js(tempObj);
 
-  //請先計算總營收後, 作為分母使用, 下方尚未把分母算出來
-  //看看newC3Array可否用c3Array取代之, 待測試
+  //將資料傳給c3.js函式繪製全產品類別營收比重的圓餅圖
+  drawAllItemsPie(OrderProductCategoryForC3);
+};
+
+//將所有訂單的各項產品及金額進行統計
+function tinyAllProductsOfOrders() {
+  let tempObj2 = {};
+  //因每筆訂單內可能不只包含一個產品, 可能會有兩個以上的產品, 故將每一筆訂單內的每一個產品名稱與總金額進行統計
+  orderData.forEach(function (item, index) {
+    item.products.forEach(function (item, index) {
+
+    //將該訂單內該項目的總金額計算出來
+    let thisItemTotalPrice = item.price * item.quantity;
+
+    //若物件內沒有該產品品項, 則值為null而非""(空字串)
+    if (tempObj2[item.title] == null) {
+      tempObj2[item.title] = thisItemTotalPrice;
+    } else {
+      //tempObj2[item.title]代表取出該品項的值(也就是取出該品項的金額), 而因為物件的值是字串型態, 故需要先將其轉型為整數後,才能跟本次的產品金額相加
+      tempObj2[item.title] = parseInt(tempObj2[item.title]) + parseInt(thisItemTotalPrice);
+    }
+    });
+  });
+
+  //將現有物件資料調整為c3.js所接受的"陣列內有多個小陣列"的格式, 呼叫函式後, 其回傳的資料格式為陣列格式
+  AllProductsOfOrdersForC3 = chageObjToArrForC3js(tempObj2);
+
+  //將該陣列的第二個值進行比較, 目的是要進行降冪排列(由大至小排序)
+  //寫法參考自:https://ithelp.ithome.com.tw/articles/10225733
+  AllProductsOfOrdersForC3.sort(function(a, b){
+    if(a[1] < b[1]){
+      return 1; //當a[1]值 < b[1]值為true時, 代表b[1]較a[1]更大, 故把b放在a的前面, 數值越大者將被排得越前面
+    }else{
+      return -1; //當a[1]值 < b[1]值為false時, 代表b[1]較a[1]更小, 故把b放在a的後面, 數值越大者將被排得越前面
+    }
+  });
+
+  console.log("AllProductsOfOrdersForC3排序之後, 結果如下");
+  console.log(AllProductsOfOrdersForC3);
+
+  let count = 0;
+  let tempArr = [];
+  //只將營收最高的前三名名稱完整列於圓餅圖上, 其餘第四名至第八名全部歸納為"其它"
+  AllProductsOfOrdersForC3.forEach(function(item, index){
+    if(index >= 3){
+      count += parseInt(item[1]);
+    }
+  });
+  
+  //刪除陣列內自index為3以後的6筆項目, 亦包含index為3本身那一項; 因為在此知道產品最多共有8種, 所以把index為3~8的全部刪除掉, 所以最多會有6筆項目
+  AllProductsOfOrdersForC3.splice(3,6);
+
+  //將第四名至第八名全部歸納為"其它", 且將金額一併放入陣列內
+  tempArr.push("其它");
+  tempArr.push(count);
+  console.log(tempArr);
+
+  //將組合好的["其它", xxx(金額)]陣列放入陣列內
+  AllProductsOfOrdersForC3.push(tempArr);
+
+  //將資料傳給c3.js函式繪製全產品營收比重的圓餅圖
+  drawAllItemsPie2(AllProductsOfOrdersForC3);
+};
+
+//將物件格式調整為c3.js能夠接受的資料格式
+function chageObjToArrForC3js(tempObj){ 
+  //c3.js的圓餅圖會自動依照傳入的資料數字, 產生對應百分比, 故不用特地計算金額的百分比進行顯示
   let c3Array = [];
   let newC3Array = [];
   c3Array = Object.keys(tempObj);
-  //console.log(tempArray);
+
   c3Array.forEach(function (item, index) {
     let tempArr = [];
     tempArr.push(item);
     tempArr.push(tempObj[item]);
     newC3Array.push(tempArr);
   });
-  console.log(newC3Array);
+  //console.log(newC3Array);
 
-  //將資料傳給c3.js函式繪製全品項營收的圓餅圖
-  drawAllItemsPie(newC3Array);
+  return newC3Array;
 };
 
 //將訂單列表的資訊組合成完整HTML, 且在刪除該品項標籤裡, id的後方加入data-id, 令每個產品的刪除按鈕都有各自的id, 以利監聽事件監聽是否有某某產品的"刪除"按鈕已被點擊到了, 即可做出後續處理; 此外因為我們想要做出當點擊到刪除按鈕時, 才做後續處理, 若點擊到該ul裡的其他地方則不執行任何動作, 因此需要在刪除產品的標籤內自行加入一個id
@@ -104,6 +174,7 @@ function renderOrderList() {
   orderList.innerHTML = str;
 };
 
+//將訂單列表組合成HTML字串
 function combimeOrderListHTML(item, orderProductsTitle, orderDate, orderOperationStats) {
 
   let str = `
@@ -205,6 +276,7 @@ orderList.addEventListener("click", function (e) {
   }
 });
 
+//修改被點擊到的那一筆訂單狀態(未處理改成已處理; 反之, 改成未處理)
 function putOneOrder(data) {
   //此處的{data}必定要擺在{headers}前方, 如果兩者擺放位置對換, 則此API會回傳403(非API本人使用)的錯誤訊息
   axios.put(`https://livejs-api.hexschool.io/api/livejs/v1/admin/${api_path}/orders`,
@@ -278,6 +350,28 @@ function derlAllOrders() {
 function drawAllItemsPie(arr) {
   const chart = c3.generate({
     bindto: '#chart', // HTML 元素綁定
+    data: {
+      type: "pie",
+      columns: arr,
+    },
+    /*color物件必須要擺在data:{}之外, 如果是使用"color", 則可搭配pattern及顏色色碼, 其內不需寫明data物件裡columns屬性的名稱, 個人覺得使用起來比較簡便, 但缺點是就不曉得哪個屬性對應的顏色是什麼, 要先自己測試好再將色碼填入pattern內; 如果要使用"colors"(尾字多一個s), 則需要寫明data物件裡columns屬性的名稱, 例如:
+    colors: {
+      "床架":"#DACBFF",
+      "收納":"#9D7FEA",
+      "窗簾":"#5434A7"
+    } */
+    color: {
+      //依序為窗簾, 床架和收納
+      pattern: ["#5434A7", "#DACBFF", "#9D7FEA"]
+    }
+  });
+};
+
+
+//使用C3.js繪圖_後台作業LV2:製作圓餅圖，做全品項營收比重，類別含四項，篩選出前三名營收品項，其他 4~8 名都統整為「其它」
+function drawAllItemsPie2(arr) {
+  const chart = c3.generate({
+    bindto: '#chart2', // HTML 元素綁定
     data: {
       type: "pie",
       columns: arr,
