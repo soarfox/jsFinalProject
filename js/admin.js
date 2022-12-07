@@ -111,7 +111,7 @@ function combimeOrderListHTML(item, orderProductsTitle, orderDate) {
     </td>
     <td>${orderDate}</td>
     <td class="orderStatus">
-      <a href="#">未處理</a>
+      <a href="#" class="orderOperation" data-id="${item.id}">未處理</a>
     </td>
     <td>
       <input type="button" class="delSingleOrder-Btn" data-id="${item.id}" value="刪除">
@@ -158,16 +158,34 @@ orderList.addEventListener("click", function (e) {
   //加入preventDefault(); 取消默認的HTML <a>標籤行為
   e.preventDefault();
 
-  //抓取自行埋設在刪除按鈕上的id
-  const delItemId = e.target.getAttribute("data-id");
+  //因為在訂單列表中有兩種按鈕(訂單處理情形與刪除訂單按鈕), 且均有埋設各自的class name和id, 故在此判斷管理者點擊到的是哪一個按鈕
+  let orderClass = e.target.getAttribute("class");
 
-  //如果使用者點到ul的他處則cartId的值會為null, 故可跳出提示告知您點擊到他處了
-  if (delItemId == null) {
-    //console.log("您點到別的地方囉!");
+  //抓取訂單列表的目標文字, 藉此判斷訂單處理狀態是未處理/已處理 
+  let orderOperationText = e.target.textContent;
+
+  //當管理者點擊到訂單處理按鈕時
+  if(orderClass === "orderOperation"){
+    const orderOperation = document.querySelector(".orderOperation");
+    if(orderOperationText === "未處理"){
+      orderOperation.textContent = "已處理";
+    }else{
+      orderOperation.textContent = "未處理";
+    }
+    alert("此筆訂單狀態已調整");
     return;
   }
-  //刪除管理者點擊到的該張訂單資料
-  delOneOrder(delItemId);
+  //當管理者點擊到刪除訂單按鈕時
+  else if(orderClass === "delSingleOrder-Btn"){
+    const delItemId = e.target.getAttribute("data-id");
+    //刪除管理者點擊到的訂單項目, 且在該函式中跳出警告視窗, 告知管理者是否刪除成功
+    delOneOrder(delItemId);
+    return;
+  }
+  //當管理者點擊到訂單列表的其他位置, 不做任何反應
+  else{
+    return;
+  }
 });
 
 //刪除單一一張訂單資料
@@ -182,6 +200,9 @@ function delOneOrder(orderId) {
       //console.log(`已刪除訂單編號${orderId}完成`);
       alert(`已刪除訂單編號${orderId}完成`);
       renderOrderList();
+
+      //刪除一筆訂單後, 呼叫函式來重新統計所有訂單內, 各個產品分類與總金額並由其內部呼叫c3.js函式重繪圓餅圖
+      tinyOrderProductCategory();
     })
     .catch(function (response) {
       console.log(response);
@@ -216,6 +237,9 @@ function derlAllOrders() {
       orderData = response.data.orders;
       alert(`已刪除所有訂單資料`);
       renderOrderList();
+      const emptyArr = [];
+      //刪除所有訂單後, 呼叫c3.js繪圖函式且傳送一個空陣列資料過去, 代表已無任何資料
+      drawAllItemsPie(emptyArr);
     })
     .catch(function (response) {
       console.log(response);
