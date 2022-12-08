@@ -51,13 +51,14 @@ function getOrderList() {
     })
 }
 
-//將訂單資料依照創建時間戳的大小排序(最新創建者會排在最上方)
+//將訂單資料依照創建時間戳的大小排序(最新創建的訂單會排在最上方)
+//寫法參考自:https://ithelp.ithome.com.tw/articles/10225733
 function sortOrderData(){
   orderData.sort(function(a, b){
     if(a.createdAt < b.createdAt){
-      return 1; //當a[1]值 < b[1]值為true時, 代表b[1]較a[1]更大, 故把b放在a的前面, 數值越大者將被排得越前面
+      return 1; //當a.createdAt值 < b.createdAt值為true時, 代表b項較a項更大, 故把b項放在a項的前面, 數值越大者將被排得越前面
     }else{
-      return -1; //當a[1]值 < b[1]值為false時, 代表b[1]較a[1]更小, 故把b放在a的後面, 數值越大者將被排得越前面
+      return -1; //當a.createdAt值 < b.createdAt值為false時, 代表b項較a項更小, 故把b項放在a項的後面, 數值越大者將被排得越前面
     }
   });
 };
@@ -226,9 +227,9 @@ function tinyAllProductsOfOrders() {
   //寫法參考自:https://ithelp.ithome.com.tw/articles/10225733
   AllProductsOfOrdersForC3.sort(function(a, b){
     if(a[1] < b[1]){
-      return 1; //當a[1]值 < b[1]值為true時, 代表b[1]較a[1]更大, 故把b放在a的前面, 數值越大者將被排得越前面
+      return 1; //當a[1]值 < b[1]值為true時, 代表b項較a項更大, 故把b項放在a項的前面, 數值越大者將被排得越前面
     }else{
-      return -1; //當a[1]值 < b[1]值為false時, 代表b[1]較a[1]更小, 故把b放在a的後面, 數值越大者將被排得越前面
+      return -1; //當a[1]值 < b[1]值為false時, 代表b項較a項更小, 故把b項放在a項的後面, 數值越大者將被排得越前面
     }
   });
 
@@ -276,7 +277,7 @@ function drawAllItemsPie2(arr) {
     } */
     color: {
       //依序為營收第一名, 營收第二名和營收第三名, 營收第四名到第八名(被歸內成"其它")
-      pattern: ["#5434A7", "#DACBFF", "#9D7FEA", "#842B00"]
+      pattern: ["#5434A7", "#DACBFF", "#9D7FEA", "#301E5F"]
     }
   });
 };

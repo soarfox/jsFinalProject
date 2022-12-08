@@ -1,5 +1,5 @@
 //在index.html檔案中引用config.js檔案後, 即可在此顯示測試看看是否有抓到API的路徑與token
-console.log(`api_path=${api_path}, token=${token}`);
+//console.log(`api_path=${api_path}, token=${token}`);
 
 //API所需的headers設為一個物件, 以利直接帶入即可使用
 const headers = {
@@ -34,7 +34,7 @@ function getProductList() {
   axios.get(`https://livejs-api.hexschool.io/api/livejs/v1/customer/${api_path}/products`)
     .then(function (response) {
       productData = response.data.products;
-      console.log(productData);
+      //console.log(productData);
       renderProductList();
 
     })
@@ -48,20 +48,36 @@ function renderProductList() {
   //這個str記得要放在forEach外面, 這樣子要渲染資料時才能找到這個str變數
   let str = "";
   productData.forEach(function (item, index) {
-    str += combimeProductListHTML(item);
+    //將產品原價改成具有千分位號方式顯示
+    let thousandProductOriginalPrice = changeToThousandNum(item.origin_price);
+    //將產品價格改成具有千分位號方式顯示
+    let thousandProductPrice = changeToThousandNum(item.price);
+    
+    str += combimeProductListHTML(item, thousandProductOriginalPrice, thousandProductPrice);
   });
   productList.innerHTML = str;
 };
 
+//將金額轉成具有千分位號的形式, 從物件內取出的金額是數字, 故需要先轉成字串(.toString())後, 才能轉換
+function changeToThousandNum(price){
+  //這個\B的意思代表並非頭尾邊界, 而是數字之間的邊界, 例如數字:123, 則\B代表的是1和2之間, 2和3之間
+  //這個(?<!)代表的意思是在前方沒有..., (?<!\.\d*)代表在前方沒有小數點, 也沒有任何數字(*代表匹配前一字元0至多次, d*代表前一字元為數字0至多次的意思)
+  //這個(?=)代表的意思是在後方必須要是..., (?=(\d{3})+代表在後方必須要是三個數字一組的值, 也就是12345, 則符合此條件的是1和2之間的間界, 因為後方有一組234(三個數字一組的值), 以及2和3之間的間界, 因為後方有一組345(三個數字一組的值), 而最後的那個+號代表"至少要有一組或一組以上"具有這種三個數字一組的值
+  //(?!\d)代表的意思是後方不可以是數字, 而/g代表查找所有可能的匹配結果, 如果不加/g就只會匹配一個結果就結束
+  let tempStr = price.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
+  return tempStr;
+  
+};
+
 //將產品列表的資訊組合成完整HTML, 且在加入購物車的<a>標籤裡, id的後方加入data-id, 令每個產品的加入購物車按鈕都有各自的id, 以利監聽事件監聽是否有某某產品的"加入購物車"按鈕已被點擊到了, 即可做出後續處理; 此外因為我們想要做出當點擊到加入購物車按鈕時, 才做後續處理, 若點擊到該ul裡的其他地方則不執行任何動作, 因此需要在加入購物車的<a>標籤內自行加入一個class name; 且id照理來說只能用一次, 因此這裡是設計師寫錯了
-function combimeProductListHTML(item) {
+function combimeProductListHTML(item, thousandProductOriginalPrice, thousandProductPrice) {
   let str = `<li class="productCard">
   <h4 class="productType">新品</h4>
   <img src="${item.images}" alt="Antony 雙人">
   <a href="#" class="js-addCart" id="addCardButton" data-id="${item.id}">加入購物車</a>
   <h3>${item.title}</h3>
-  <del class="originPrice">NT$${item.origin_price}(這裡的js請不要寫成innterHTML, 前方多寫一個小寫t, 因為這樣VScode也不會報錯, 請留意; 在此先將金額直接寫死; 請記得到時候顯示出來時要在千分位加上逗號)</del>
-  <p class="nowPrice">NT$${item.price}</p>
+  <del class="originPrice">NT$${thousandProductOriginalPrice}</del>
+  <p class="nowPrice">NT$${thousandProductPrice}</p>
 </li>`;
   return str;
 }
@@ -69,7 +85,7 @@ function combimeProductListHTML(item) {
 //針對下拉式選單進行監聽
 productSelect.addEventListener("change", function (e) {
   const category = e.target.value;
-  console.log(category);
+  //console.log(category);
   if (category == "全部") {
     renderProductList();
     return;
@@ -123,7 +139,7 @@ function getCartList() {
       cartTotalPrice.textContent = response.data.finalTotal;
 
       cartData = response.data.carts;
-      console.log(cartData);
+      //console.log(cartData);
       renderCartList();
     })
     .catch(function (response) {
@@ -136,13 +152,16 @@ function getCartList() {
 function renderCartList() {
   let str = "";
   cartData.forEach(function (item, index) {
-    str += combimeCartListHTML(item);
+    let thousandUnitPrice = changeToThousandNum(item.product.price);
+    let thousandTotalPrice = changeToThousandNum(item.product.price * item.quantity);
+
+    str += combimeCartListHTML(item, thousandUnitPrice, thousandTotalPrice);
   });
   cartList.innerHTML = str;
 };
 
 //將購物車的資訊組合成完整HTML
-function combimeCartListHTML(item) {
+function combimeCartListHTML(item, thousandUnitPrice, thousandTotalPrice) {
   let str =
     `<tr>
     <td>
@@ -151,9 +170,9 @@ function combimeCartListHTML(item) {
         <p>${item.product.title}</p>
       </div>
     </td>
-    <td>NT$${item.product.price}</td>
+    <td>NT$${thousandUnitPrice}</td>
     <td>${item.quantity}</td>
-    <td>NT$${item.product.price * item.quantity}</td>
+    <td>NT$${thousandTotalPrice}</td>
     <td class="discardBtn">
       <a href="#" class="material-icons" data-id="${item.id}" data-productTitle="${item.product.title}">
         clear
@@ -172,10 +191,10 @@ function postCartList(addProductId, addQuantity) {
     }
   })
     .then(function (response) {
-      //將API回傳的購物車總金額顯示在畫面上
-      cartTotalPrice.textContent = response.data.finalTotal;
+      //將API回傳的購物車總金額顯示在畫面上, 且將該總金額轉成千分位號後進行顯示
+      cartTotalPrice.textContent = changeToThousandNum(response.data.finalTotal);
       cartData = response.data.carts;
-      console.log(cartData);
+      //console.log(cartData);
       renderCartList();
     })
     .catch(function (response) {
@@ -206,12 +225,12 @@ cartList.addEventListener("click", function (e) {
 function delCartItem(wantDelCartItemId, wantDelCartItemTitle) {
   axios.delete(`https://livejs-api.hexschool.io/api/livejs/v1/customer/${api_path}/carts/${wantDelCartItemId}`)
     .then(function (response) {
-      //將API回傳的購物車總金額顯示在畫面上
-      cartTotalPrice.textContent = response.data.finalTotal;
+      //將API回傳的購物車總金額顯示在畫面上, 且將該總金額轉成千分位號後進行顯示
+      cartTotalPrice.textContent = changeToThousandNum(response.data.finalTotal);
 
       //當刪除單一品項完畢後, 在此要接收購物車的新資料, 這樣才能及時將cartData變數內的資料做更新, 然後呼叫渲染購物車列表函式時, 才會立刻顯示最新的購物車列表內容在畫面上
       cartData = response.data.carts;
-      console.log(cartData);
+      //console.log(cartData);
       alert(`您已刪除購物車內的"${wantDelCartItemTitle}"品項了`);
       renderCartList();
     })
@@ -238,7 +257,7 @@ function delCartAllItem() {
 
       //當刪除所有品項完畢後, 在此要接收購物車的新資料, 這樣才能及時將cartData變數內的資料做更新, 然後呼叫渲染購物車列表函式時, 才會立刻顯示最新的購物車列表內容在畫面上
       cartData = response.data.carts;
-      console.log(cartData);
+      //console.log(cartData);
       alert(`您已清空購物車了`);
       renderCartList();
     })
@@ -289,7 +308,7 @@ function postOrder(data) {
   {
     data
   }).then(function (response) {
-      console.log(response.data);
+      //console.log(response.data);
       alert("加入訂單成功");
       
       //送出訂單後, 重新取得購物車API的資料, 發現購物車已經清空了
