@@ -54,7 +54,6 @@ function renderProductList() {
     let thousandProductOriginalPrice = changeToThousandNum(item.origin_price);
     //將產品價格改成具有千分位號方式顯示
     let thousandProductPrice = changeToThousandNum(item.price);
-    
     str += combimeProductListHTML(item, thousandProductOriginalPrice, thousandProductPrice);
   });
   productList.innerHTML = str;
@@ -95,9 +94,14 @@ productSelect.addEventListener("change", function (e) {
   //這個str記得要放在forEach外面, 這樣子要渲染資料時才能找到這個str變數
   let str = "";
   productData.forEach(function (item, index) {
-    //item抓出產品列表的8筆資料後, 逐一跟監聽事件所選中的資料做比較, 有相同者才會進入if判斷式內進行HTML字串的串接
+    //item抓出產品列表的8筆資料後, 逐一跟監聽事件所選中的"category的值"做比較, 有符合者才走入if判斷式
     if (item.category === category) {
-      str += combimeProductListHTML(item);
+      //將產品原價改成具有千分位號方式顯示
+      let thousandProductOriginalPrice = changeToThousandNum(item.origin_price);
+      //將產品價格改成具有千分位號方式顯示
+      let thousandProductPrice = changeToThousandNum(item.price);
+      
+      str += combimeProductListHTML(item, thousandProductOriginalPrice, thousandProductPrice);
     }
   });
   productList.innerHTML = str;
@@ -111,7 +115,7 @@ productList.addEventListener("click", function (e) {
   //取得在產品列表內ul自訂的class name, 如果並非加入購物車<a>標籤內的class name, 則不做任何反應
   let addCartClass = e.target.getAttribute("class");
   if (addCartClass !== "js-addCart") {
-    alert("如果您欲將產品加入購物車, 請點擊'加入購物車'按鈕");
+    //alert("如果您欲將產品加入購物車, 請點擊'加入購物車'按鈕");
     return;
   }
   //如果程式能通過上方, 執行到這裡, 那就代表使用者有正確點擊到加入購物車<a>標籤, 故取出產品id稍後使用
