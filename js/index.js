@@ -12,6 +12,8 @@ const cartList = document.querySelector(".shoppingCart-tableList");
 const cartDelAll = document.querySelector(".discardAllBtn");
 const cartTotalPrice = document.querySelector(".js-total");
 const orderSubmitBtn = document.querySelector(".orderInfo-btn");
+const orderInfos = document.querySelectorAll(".orderInfo-message");
+
 
  //綁定前台預訂表單各欄位的DOM元素
  const customerName = document.querySelector("#customerName");
@@ -86,7 +88,7 @@ function combimeProductListHTML(item, thousandProductOriginalPrice, thousandProd
 productSelect.addEventListener("change", function (e) {
   const category = e.target.value;
   //console.log(category);
-  if (category == "全部") {
+  if (category === "全部") {
     renderProductList();
     return;
   }
@@ -94,7 +96,7 @@ productSelect.addEventListener("change", function (e) {
   let str = "";
   productData.forEach(function (item, index) {
     //item抓出產品列表的8筆資料後, 逐一跟監聽事件所選中的資料做比較, 有相同者才會進入if判斷式內進行HTML字串的串接
-    if (item.category == category) {
+    if (item.category === category) {
       str += combimeProductListHTML(item);
     }
   });
@@ -212,8 +214,8 @@ cartList.addEventListener("click", function (e) {
   //抓取自行埋設在刪除按鈕上的產品名稱, 用於當刪除該項目時可顯示其產品名稱
   const cartProductTitle = e.target.getAttribute("data-productTitle");
   //如果使用者點到ul的他處則cartId的值會為null, 故可跳出提示告知您點擊到他處了
-  if (cartId == null) {
-    //alert("您點到別的地方囉!");
+  if (cartId === null) {
+    //alert("如果要刪除該品項, 請點擊右方的X圖示");
     return;
   }
   //console.log(`您點到的是刪除按鈕沒錯, 產品名稱:${cartProductTitle}`);
@@ -271,36 +273,100 @@ function delCartAllItem() {
 orderSubmitBtn.addEventListener("click", function(e){
   //加入preventDefault(); 取消默認的HTML標籤行為
   e.preventDefault();
-  
+
   //依據最終關卡任務的"最終關卡流程圖_DOM 與 API 介接"所述, 需先確認購物車內是否有品項, 如有才能繼續走送出訂單的流程
-  if(cartData.length == ""){
+  if(cartData.length === 0){
     alert("請先將商品加入購物車, 才能送出訂單");
     return;
   }
 
   let user = {};
 
-  //依據最終關卡任務的"最終關卡流程圖_DOM 與 API 介接"所述, 需先確認訂單資訊各欄位的值是否都有完整填寫, 如有才能繼續走送出訂單的流程
-  //確認前台使用者在訂單上填寫的資料是否完整; 因為已先在最外層先抓出訂單的各項DOM元素, 故在此要使用.value來取得使用者在此時於表單的各欄位所輸入的內容並進行判斷
-  if(customerName.value === "" || customerPhone.value === "" || customerEmail.value === "" || customerAddress.value === "" || customerTradeWay.value === ""){
-    alert("您的訂單資訊需填寫完整");
+  //將使用者填的訂單資料組合成一個user物件
+  user.name = customerName.value;
+  user.tel = customerPhone.value;
+  user.email = customerEmail.value;
+  user.address = customerAddress.value;
+  user.payment = customerTradeWay.value;
+
+  //將表單各欄位後方預設的"必填"二字先清除,　稍後判斷欄位內容是否正確, 如不正確則填上驗證錯誤的對應訊息
+  orderInfos.forEach(function(item, index){
+    item.textContent = "";
+  });
+
+  //檢查欄位內容是否正確並回傳結果
+  if(checkForm(user)===false){
+    alert("請將訂單內容依格式規範填寫完整後, 再次送出訂單");
     return;
-  }else{
-      //將使用者填的訂單資料組合成一個user物件
-      user.name = customerName.value;
-      user.tel = customerPhone.value;
-      user.email = customerEmail.value;
-      user.address = customerAddress.value;
-      user.payment = customerTradeWay.value;
   }
-  //console.log(user);
 
   //因為增加一筆訂單的API, 其需包含一個名稱為data的物件, 該物件內需包含使用者填寫的訂單資訊, 再呼叫函式傳送過去給API使用
   let data = {
     user
   };
+
+  //呼叫增加一筆訂單的API函式
   postOrder(data);
 });
+
+
+function checkForm(user){
+ 
+  const constraints = {
+    name: {
+      presence: {
+        allowEmpty: false,
+        message: "不可為空白"
+      }
+    },
+    tel: {
+      presence: {
+        allowEmpty: false,
+        message: "不可為空白"
+      },
+      numericality: {
+        onlyInteger: true,
+        message: "僅接受數字"
+      },
+      length: {
+        is: 10,
+        message: "請輸入10位數字的號碼"
+      }
+    },
+    email: {
+      presence: {
+        allowEmpty: false,
+        message: "不可為空白"
+      },
+      email: {
+        message: "並非有效的Email格式"
+      }
+    },
+    address: {
+      presence: {
+        allowEmpty: false,
+        message: "不可為空白"
+      }
+    }
+  };
+
+  let validateErrors = validate(user, constraints);
+
+  //如果有錯誤訊息, 則走入if判斷式內顯示內容
+  if(validateErrors){
+    //console.log(`validateErrors如下`);
+    //console.log(validateErrors);
+
+    //將驗證後的結果, 對照欄位名稱並印出對應的錯誤訊息
+    Object.keys(validateErrors).forEach(function(keys){
+      document.querySelector(`.${keys}`).textContent = validateErrors[keys];
+    });
+    return false;
+  }else{
+    //console.log("表單資料全數通過驗證");
+    return true;
+  }
+};
 
 //增加一筆訂單, API網址後需包含一個data物件, 該物件內需包含使用者填寫的訂單資訊
 function postOrder(data) {
